@@ -4,10 +4,12 @@
         <style>
             body {
                 margin: 0;
-                box-sizing: border-box;
-                display: block;
             }
-            .cell {
+            #container {
+                width: 80vw;
+                height: 100vh;
+            }
+            #table > .cell {
                 display: block;
                 width: 100%;
                 height: 50px;
@@ -19,11 +21,12 @@
                 position: fixed;
                 top: 0;
                 right: 0;
-                width: 200px;
-                bottom: 0;
+                width: 20vw;
+                height: 100vh;
                 background: #eee;
                 padding: 20px;
                 margin: 0;
+                box-sizing: border-box;
             }
             #debug > dt {
                 display: inline-block;
@@ -39,122 +42,34 @@
         </style>
     </head>
     <body>
-        <dl id="debug"></dl>
+        <div id="container">
+            <div id="table"></div>
+        </div>
     </body>
+    <script src="virtual-scroll.js"></script>
     <script>
-        const maximumBodyHeight = 16777200
-        const cellHeight = 50
-        const maximumDisplayN = Math.floor(maximumBodyHeight / cellHeight)
-        const body = document.querySelector('body')
-        const n = 5e6
-        const virtualCells = []
 
-        let data = window.data = []
-        for (let i = 0; i < n; i++) {
-            let number = Math.random() * 100
+        let cell = document.createElement('div')
+        cell.setAttribute('class', 'cell')
+
+        let data = []
+        for (let i = 0; i < 335544; i++) {
+            let number = Math.random()
             data.push(number)
         }
-        if (data.length > maximumDisplayN) {
-            data.length = maximumDisplayN
-        }
 
-        let currentIndex = Math.floor(body.scrollTop / cellHeight)
-
-        const updateDebugBox = createDebugBox({
-            'data.length': data.length,
-            'virtualCells.length': virtualCells.length,
-            cellHeight,
-            currentIndex
+        let table = new VirtualScroll({
+            element: document.getElementById('table'),
+            data,
+            cellHeight: 50,
+            debug: true,
+            cell,
+            update: (cell, value) => {
+                cell.innerHTML = String(value)
+                let g = Math.round(value * 255)
+                cell.style.background = `rgba(255, ${g}, 255, 1)`
+            }
         })
 
-        body.style.height = data.length * cellHeight
-
-        window.addEventListener('scroll', event => {
-            currentIndex = Math.floor(body.scrollTop / cellHeight)
-            updateVirtualCells(currentIndex)
-            updateDebugBox({
-                currentIndex
-            })
-        })
-
-        window.addEventListener('resize', event => {
-            let count = Math.ceil(body.clientHeight / cellHeight)
-            adjustVirtualCells(count)
-            updateVirtualCells(currentIndex)
-        })
-
-        let count = Math.ceil(body.clientHeight / cellHeight)
-        adjustVirtualCells(count)
-        updateVirtualCells(0)
-
-        function adjustVirtualCells(count) {
-            let adjustment = count - virtualCells.length
-            while (virtualCells.length < count) {
-                let cell = createVirtualCell()
-                virtualCells.push(cell)
-            }
-            while (virtualCells.length > count) {
-                let cell = virtualCells[virtualCells.length - 1]
-                removeVirtualCell(cell)
-                virtualCells.pop()
-            }
-            updateDebugBox({
-                'virtualCells.length': virtualCells.length
-            })
-        }
-
-        function createVirtualCell() {
-            let cell = document.createElement('div')
-            cell.setAttribute('class', 'cell')
-            cell.innerHTML = Math.random() * 100
-            cell.contentEditable = true
-            body.appendChild(cell)
-            return cell
-        }
-
-        function removeVirtualCell(cell) {
-            body.removeChild(cell)
-        }
-
-        function updateVirtualCells(index) {
-            let paddingTop = index * cellHeight
-            body.style.paddingTop = `${paddingTop}px`
-            for (let i in virtualCells) {
-                let cell = virtualCells[i]
-                cell.innerHTML = `${data[index + ~~i]}`
-            }
-        }
-
-        function createDebugBox(variables) {
-            let update = {}
-            let dl = document.getElementById('debug')
-            for (let name in variables) {
-                let value = variables[name]
-                update[name] = addVariable(name, value)
-            }
-            function addVariable(name, value) {
-                let dt = document.createElement('dt')
-                dt.setAttribute('data-variable', name)
-                dt.innerHTML = name
-                dl.appendChild(dt)
-                let dd = document.createElement('dd')
-                dd.setAttribute('data-variable', name)
-                dd.innerHTML = value
-                dl.appendChild(dd)
-                return function(newValue) {
-                    dd.innerHTML = newValue
-                }
-            }
-            return function(variablesToUpdate) {
-                for (let name in variablesToUpdate) {
-                    let value = variablesToUpdate[name]
-                    if (update[name]) {
-                        update[name](value)
-                    } else {
-                        addVariable(name, value)
-                    }
-                }
-            }
-        }
     </script>
 </html>
