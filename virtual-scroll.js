@@ -119,9 +119,10 @@ class VirtualScroll {
     updateVirtualCells() {
         let paddingTop = this.currentIndex * this.cellHeight
         this.element.style.paddingTop = `${paddingTop}px`
-        for (let index in this.virtualCells) {
-            let cell = this.virtualCells[index]
-            let value = this.data[this.currentIndex + parseInt(index)]
+        for (let i in this.virtualCells) {
+            let cell = this.virtualCells[i]
+            let index = this.currentIndex + parseInt(i)
+            let value = this.data[index]
             if (value !== cell.__rawValue) {
                 cell.__rawValue = value
                 cell.__index = index
