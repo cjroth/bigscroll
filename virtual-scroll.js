@@ -2,7 +2,6 @@ const maximumBodyHeight = 16777200
 
 class VirtualScroll {
     constructor(options) {
-
         Object.assign(this, {
             element: document.getElementById('body'),
             data: [],
@@ -13,16 +12,39 @@ class VirtualScroll {
                 cell.innerHTML = value || ''
             }
         }, options)
-        this.virtualCells = []
+
+        this.virtualCells = new Proxy([], {
+            deleteProperty: (target, property) => {
+                this.element.removeChild(target[property])
+                return true
+            },
+            set: (target, property, value, receiver) => {
+                target[property] = value
+                if (/^\d+$/.test(property)) {
+                    this.element.appendChild(value)
+                }
+                return true
+            }
+        })
+
+        this.data = new Proxy(this.data, {
+            deleteProperty: (target, property) => {
+                delete target[property]
+                this.fitData()
+                return true
+            },
+            set: (target, property, value, receiver) => {
+                target[property] = value
+                if (/^\d+$/.test(property)) {
+                    this.fitData()
+                }
+                return true
+            }
+        })
+
         this.maximumDisplayCount = Math.floor(maximumBodyHeight / this.cellHeight)
         this.currentIndex = this.element.parentElement.scrollTop / this.cellHeight
 
-        if (this.data.length > this.maximumDisplayCount) {
-            console.warn(`Data is being truncated because the maximum number or rows is ${this.data.length} (data.length) / ${this.cellHeight}px (cellHeight) = ~${this.maximumDisplayCount}.`)
-            this.data.length = this.maximumDisplayCount
-        }
-
-        this.element.style.height = this.data.length * this.cellHeight
         this.element.style.boxSizing = 'border-box'
         this.element.parentElement.style.overflow = 'scroll'
         this.element.style.overflow = 'hidden'
@@ -35,10 +57,9 @@ class VirtualScroll {
         })
 
         this.adjustVirtualCells()
-        this.updateVirtualCells()
+        this.fitData()
 
         this.element.parentElement.addEventListener('scroll', event => {
-            console.log('scroll')
             this.currentIndex = Math.floor(this.element.parentElement.scrollTop / this.cellHeight)
             this.updateVirtualCells()
             this.updateDebugBox({
@@ -53,15 +74,23 @@ class VirtualScroll {
 
     }
 
+    fitData() {
+        if (this.data.length > this.maximumDisplayCount) {
+            console.warn(`Data is being truncated because the maximum number or rows is ${this.data.length} (data.length) / ${this.cellHeight}px (cellHeight) = ~${this.maximumDisplayCount}.`)
+            this.data.length = this.maximumDisplayCount
+        }
+        this.element.style.height = this.data.length * this.cellHeight
+        this.updateVirtualCells()
+    }
+
     adjustVirtualCells() {
         let count = Math.ceil(this.element.parentElement.clientHeight / this.cellHeight) + 1
         while (this.virtualCells.length < count) {
-            let cell = this.createVirtualCell()
+            let cell = this.cell.cloneNode()
             this.virtualCells.push(cell)
         }
         while (this.virtualCells.length > count) {
             let cell = this.virtualCells[this.virtualCells.length - 1]
-            this.removeVirtualCell(cell)
             this.virtualCells.pop()
         }
         if (this.debug) {
@@ -71,23 +100,16 @@ class VirtualScroll {
         }
     }
 
-    createVirtualCell() {
-        let cell = this.cell.cloneNode()
-        this.element.appendChild(cell)
-        return cell
-    }
-
-    removeVirtualCell(cell) {
-        this.element.removeChild(cell)
-    }
-
     updateVirtualCells() {
         let paddingTop = this.currentIndex * this.cellHeight
         this.element.style.paddingTop = `${paddingTop}px`
         for (let i in this.virtualCells) {
             let cell = this.virtualCells[i]
             let value = this.data[this.currentIndex + ~~i]
-            this.update(cell, value)
+            if (value !== cell.__rawValue) {
+                cell.__rawValue = value
+                this.update(cell, value)
+            }
         }
     }
 
