@@ -5,6 +5,7 @@
             body {
                 margin: 0;
                 box-sizing: border-box;
+                display: block;
             }
             .cell {
                 display: block;
@@ -43,42 +44,30 @@
     <script>
         const maximumBodyHeight = 16777200
         const cellHeight = 50
-        let maximumDisplayN = Math.floor(maximumBodyHeight / cellHeight)
-        let body = document.querySelector('body')
+        const maximumDisplayN = Math.floor(maximumBodyHeight / cellHeight)
+        const body = document.querySelector('body')
+        const n = 5e6
+        const virtualCells = []
 
-        let n = 5e6
         let data = window.data = []
         for (let i = 0; i < n; i++) {
             let number = Math.random() * 100
             data.push(number)
         }
-
         if (data.length > maximumDisplayN) {
             data.length = maximumDisplayN
         }
 
-        let virtualTop = body.scrollTop
-        let cellDisplayCount = Math.ceil(body.clientHeight / cellHeight)
         let currentIndex = Math.floor(body.scrollTop / cellHeight)
-        let virtualCells = []
 
-        let updateDebugBox = createDebugBox({
+        const updateDebugBox = createDebugBox({
             'data.length': data.length,
+            'virtualCells.length': virtualCells.length,
             cellHeight,
-            cellDisplayCount,
             currentIndex
         })
 
-        body.style.display = 'block'
         body.style.height = data.length * cellHeight
-
-        for (let i = 0; i < cellDisplayCount; i++) {
-            let row = document.createElement('div')
-            row.setAttribute('class', 'cell')
-            row.innerHTML = Math.random() * 100
-            body.appendChild(row)
-            virtualCells.push(row)
-        }
 
         window.addEventListener('scroll', event => {
             currentIndex = Math.floor(body.scrollTop / cellHeight)
@@ -89,15 +78,43 @@
         })
 
         window.addEventListener('resize', event => {
-            let cellDisplayCount = Math.ceil(body.clientHeight / cellHeight)
-            virtualCells.length = cellDisplayCount
+            let count = Math.ceil(body.clientHeight / cellHeight)
+            adjustVirtualCells(count)
             updateVirtualCells(currentIndex)
-            updateDebugBox({
-                cellDisplayCount
-            })
         })
 
+        let count = Math.ceil(body.clientHeight / cellHeight)
+        adjustVirtualCells(count)
         updateVirtualCells(0)
+
+        function adjustVirtualCells(count) {
+            let adjustment = count - virtualCells.length
+            while (virtualCells.length < count) {
+                let cell = createVirtualCell()
+                virtualCells.push(cell)
+            }
+            while (virtualCells.length > count) {
+                let cell = virtualCells[virtualCells.length - 1]
+                removeVirtualCell(cell)
+                virtualCells.pop()
+            }
+            updateDebugBox({
+                'virtualCells.length': virtualCells.length
+            })
+        }
+
+        function createVirtualCell() {
+            let cell = document.createElement('div')
+            cell.setAttribute('class', 'cell')
+            cell.innerHTML = Math.random() * 100
+            cell.contentEditable = true
+            body.appendChild(cell)
+            return cell
+        }
+
+        function removeVirtualCell(cell) {
+            body.removeChild(cell)
+        }
 
         function updateVirtualCells(index) {
             let paddingTop = index * cellHeight
