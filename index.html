@@ -1,0 +1,143 @@
+<!doctype>
+<html>
+    <head>
+        <style>
+            body {
+                margin: 0;
+                box-sizing: border-box;
+            }
+            .cell {
+                display: block;
+                width: 100%;
+                height: 50px;
+                line-height: 30px;
+                padding: 10px;
+                box-sizing: border-box;
+            }
+            #debug {
+                position: fixed;
+                top: 0;
+                right: 0;
+                width: 200px;
+                bottom: 0;
+                background: #eee;
+                padding: 20px;
+                margin: 0;
+            }
+            #debug > dt {
+                display: inline-block;
+                width: 75%;
+                margin: 0 0 10px 0;
+            }
+            #debug > dd {
+                text-align: right;
+                display: inline-block;
+                width: 25%;
+                margin: 0 0 10px 0;
+            }
+        </style>
+    </head>
+    <body>
+        <dl id="debug"></dl>
+    </body>
+    <script>
+        const maximumBodyHeight = 16777200
+        const cellHeight = 50
+        let maximumDisplayN = Math.floor(maximumBodyHeight / cellHeight)
+        let body = document.querySelector('body')
+
+        let n = 5e6
+        let data = window.data = []
+        for (let i = 0; i < n; i++) {
+            let number = Math.random() * 100
+            data.push(number)
+        }
+
+        if (data.length > maximumDisplayN) {
+            data.length = maximumDisplayN
+        }
+
+        let virtualTop = body.scrollTop
+        let cellDisplayCount = Math.ceil(body.clientHeight / cellHeight)
+        let currentIndex = Math.floor(body.scrollTop / cellHeight)
+        let virtualCells = []
+
+        let updateDebugBox = createDebugBox({
+            'data.length': data.length,
+            cellHeight,
+            cellDisplayCount,
+            currentIndex
+        })
+
+        body.style.display = 'block'
+        body.style.height = data.length * cellHeight
+
+        for (let i = 0; i < cellDisplayCount; i++) {
+            let row = document.createElement('div')
+            row.setAttribute('class', 'cell')
+            row.innerHTML = Math.random() * 100
+            body.appendChild(row)
+            virtualCells.push(row)
+        }
+
+        window.addEventListener('scroll', event => {
+            currentIndex = Math.floor(body.scrollTop / cellHeight)
+            updateVirtualCells(currentIndex)
+            updateDebugBox({
+                currentIndex
+            })
+        })
+
+        window.addEventListener('resize', event => {
+            let cellDisplayCount = Math.ceil(body.clientHeight / cellHeight)
+            virtualCells.length = cellDisplayCount
+            updateVirtualCells(currentIndex)
+            updateDebugBox({
+                cellDisplayCount
+            })
+        })
+
+        updateVirtualCells(0)
+
+        function updateVirtualCells(index) {
+            let paddingTop = index * cellHeight
+            body.style.paddingTop = `${paddingTop}px`
+            for (let i in virtualCells) {
+                let cell = virtualCells[i]
+                cell.innerHTML = `${data[index + ~~i]}`
+            }
+        }
+
+        function createDebugBox(variables) {
+            let update = {}
+            let dl = document.getElementById('debug')
+            for (let name in variables) {
+                let value = variables[name]
+                update[name] = addVariable(name, value)
+            }
+            function addVariable(name, value) {
+                let dt = document.createElement('dt')
+                dt.setAttribute('data-variable', name)
+                dt.innerHTML = name
+                dl.appendChild(dt)
+                let dd = document.createElement('dd')
+                dd.setAttribute('data-variable', name)
+                dd.innerHTML = value
+                dl.appendChild(dd)
+                return function(newValue) {
+                    dd.innerHTML = newValue
+                }
+            }
+            return function(variablesToUpdate) {
+                for (let name in variablesToUpdate) {
+                    let value = variablesToUpdate[name]
+                    if (update[name]) {
+                        update[name](value)
+                    } else {
+                        addVariable(name, value)
+                    }
+                }
+            }
+        }
+    </script>
+</html>
