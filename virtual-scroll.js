@@ -87,6 +87,22 @@ class VirtualScroll {
         let count = Math.ceil(this.element.parentElement.clientHeight / this.cellHeight) + 1
         while (this.virtualCells.length < count) {
             let cell = this.cell.cloneNode()
+            cell.addEventListener('blur', event => {
+                if (String(event.target.__rawValue) !== event.target.innerHTML) {
+                    switch (event.target.__type) {
+                        case 'string':
+                            this.data[event.target.__index] = event.target.innerHTML
+                            break
+                        case 'number':
+                            this.data[event.target.__index] = parseFloat(event.target.innerHTML)
+                            break
+                        case 'boolean':
+                            this.data[event.target.__index] = !!event.target.innerHTML
+                            break
+                    }
+                }
+            })
+
             this.virtualCells.push(cell)
         }
         while (this.virtualCells.length > count) {
@@ -103,11 +119,13 @@ class VirtualScroll {
     updateVirtualCells() {
         let paddingTop = this.currentIndex * this.cellHeight
         this.element.style.paddingTop = `${paddingTop}px`
-        for (let i in this.virtualCells) {
-            let cell = this.virtualCells[i]
-            let value = this.data[this.currentIndex + ~~i]
+        for (let index in this.virtualCells) {
+            let cell = this.virtualCells[index]
+            let value = this.data[this.currentIndex + parseInt(index)]
             if (value !== cell.__rawValue) {
                 cell.__rawValue = value
+                cell.__index = index
+                cell.__type = typeof value
                 this.update(cell, value)
             }
         }
