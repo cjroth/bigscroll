@@ -57,7 +57,6 @@ class VirtualScroll {
 
         this.updateDebugBox = VirtualScroll.createDebugBox({
             'data.length': this.data.length,
-            'virtualRows.length': this.virtualRows.length,
             'cellHeight': this.cellHeight,
             'cellWidth': this.cellWidth,
             'currentIndexY': this.currentIndexY,
@@ -136,12 +135,12 @@ class VirtualScroll {
                 row.removeChild(cell)
             }
         }
-        // if (this.debug) {
-        //     this.updateDebugBox({
-        //         'countX': countX,
-        //         'countY': countY
-        //     })
-        // }
+        if (this.debug) {
+            this.updateDebugBox({
+                'countX': countX,
+                'countY': countY
+            })
+        }
     }
 
     updateVirtualRows() {
@@ -209,7 +208,7 @@ class VirtualScroll {
                 if (update[name]) {
                     update[name](value)
                 } else {
-                    addVariable(name, value)
+                    update[name] = addVariable(name, value)
                 }
             }
         }
