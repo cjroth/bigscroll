@@ -18,7 +18,7 @@
             }
             #table > .row > .cell {
                 display: inline-block;
-                line-height: 100px;
+                line-height: 50px;
                 box-sizing: border-box;
                 overflow: hidden;
                 text-align: center;
@@ -61,7 +61,7 @@
         cell.setAttribute('class', 'cell')
         cell.contentEditable = true
 
-        let ny = 1e5, nx = 100
+        let ny = 1e4, nx = 100
         let data = []
         for (let i = 0; i < ny; i++) {
             let row = []
@@ -89,8 +89,8 @@
         let table = new VirtualScroll({
             element: document.getElementById('table'),
             data: dataProxy,
-            cellHeight: 100,
-            cellWidth: 100,
+            cellHeight: 50,
+            cellWidth: 200,
             debug: true,
             cell,
             update: (cell, value, rowNumber, columnNumber) => {
