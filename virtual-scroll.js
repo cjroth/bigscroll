@@ -158,6 +158,11 @@ class VirtualScroll {
                 let cell = row.children[j]
                 let indexX = this.currentIndexX + parseInt(j)
                 let value = (rowData !== undefined) ? rowData[indexX] : null
+                if (this.search && this.search[indexY] && this.search[indexY][indexX]) {
+                    cell.setAttribute('class', 'cell search-match')
+                } else {
+                    cell.setAttribute('class', 'cell')
+                }
                 if (value !== cell.__rawValue) {
                     cell.__rawValue = value
                     cell.__indexY = indexY
@@ -182,7 +187,7 @@ class VirtualScroll {
         return Math.floor(maximumPixelSize / this.cellWidth)
     }
 
-    search(value) {
+    setSearch(value) {
         let matches = []
         for (let i in table.data) {
             let row = table.data[i]
@@ -194,7 +199,12 @@ class VirtualScroll {
                 }
             }
         }
-        return matches
+        this.search = matches
+        this.updateVirtualRows()
+    }
+
+    clearSearch() {
+        this.search = null
     }
 
     static createDebugBox(variables) {
