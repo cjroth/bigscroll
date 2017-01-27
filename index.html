@@ -26,7 +26,7 @@
             #debug {
                 top: 0;
                 right: 0;
-                width: 200px;
+                width: 250px;
                 height: 100vh;
                 background: #eee;
                 padding: 20px;
@@ -35,13 +35,13 @@
             }
             #debug > dt {
                 display: inline-block;
-                width: 75%;
+                width: 66.66%;
                 margin: 0 0 10px 0;
             }
             #debug > dd {
                 text-align: right;
                 display: inline-block;
-                width: 25%;
+                width: 33.33%;
                 margin: 0 0 10px 0;
             }
         </style>
@@ -58,7 +58,7 @@
         cell.setAttribute('class', 'cell')
         cell.contentEditable = true
 
-        let ny = 100000, nx = 100
+        let ny = 1e5, nx = 100
         let data = []
         for (let i = 0; i < ny; i++) {
             let row = []

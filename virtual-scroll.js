@@ -56,7 +56,9 @@ class VirtualScroll {
         this.element.style.overflow = 'hidden'
 
         this.updateDebugBox = VirtualScroll.createDebugBox({
-            'data.length': this.data.length,
+            'rows': this.data.length,
+            'columns': this.getColumnCount(),
+            'cells': this.data.length * this.getColumnCount(),
             'cellHeight': this.cellHeight,
             'cellWidth': this.cellWidth,
             'currentIndexY': this.currentIndexY,
