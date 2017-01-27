@@ -182,6 +182,21 @@ class VirtualScroll {
         return Math.floor(maximumPixelSize / this.cellWidth)
     }
 
+    search(value) {
+        let matches = []
+        for (let i in table.data) {
+            let row = table.data[i]
+            for (let j in row) {
+                let cell = row[j]
+                if (cell === value) {
+                    matches[i] = matches[i] || []
+                    matches[i][j] = true
+                }
+            }
+        }
+        return matches
+    }
+
     static createDebugBox(variables) {
         let update = {}
         let dl = document.createElement('dl')
