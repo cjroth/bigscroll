@@ -59,7 +59,7 @@
             data.push(number)
         }
 
-        let pdata = new Proxy(data, {
+        let dataProxy = new Proxy(data, {
             deleteProperty: (target, property) => {
                 delete target[property]
                 return true
@@ -75,7 +75,7 @@
 
         let table = new VirtualScroll({
             element: document.getElementById('table'),
-            data: pdata,
+            data: dataProxy,
             cellHeight: 50,
             debug: true,
             cell,

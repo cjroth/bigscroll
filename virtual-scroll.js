@@ -129,6 +129,7 @@ class VirtualScroll {
                 cell.__type = typeof value
                 this.update(cell, value)
             }
+            cell.blur()
         }
     }
 
