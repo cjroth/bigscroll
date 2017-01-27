@@ -1,4 +1,4 @@
-const maximumBodyHeight = 16777200
+const maximumPixelSize = 16777200
 
 class VirtualScroll {
     constructor(options) {
@@ -6,6 +6,7 @@ class VirtualScroll {
             element: document.getElementById('body'),
             data: [],
             cellHeight: 50,
+            cellWidth: 50,
             debug: false,
             cell: document.createElement('div'),
             update: (cell, value) => {
@@ -13,7 +14,10 @@ class VirtualScroll {
             }
         }, options)
 
-        this.virtualCells = new Proxy([], {
+        this.cell.style.width = `${this.cellWidth}px`
+        this.cell.style.height = `${this.cellHeight}px`
+
+        this.virtualRows = new Proxy([], {
             deleteProperty: (target, property) => {
                 this.element.removeChild(target[property])
                 return true
@@ -42,8 +46,10 @@ class VirtualScroll {
             }
         })
 
-        this.maximumDisplayCount = Math.floor(maximumBodyHeight / this.cellHeight)
-        this.currentIndex = this.element.parentElement.scrollTop / this.cellHeight
+        this.maximumDisplayCountY = Math.floor(maximumPixelSize / this.cellHeight)
+        this.maximumDisplayCountX = Math.floor(maximumPixelSize / this.cellWidth)
+        this.currentIndexY = this.element.parentElement.scrollTop / this.cellHeight
+        this.currentIndexX = this.element.parentElement.scrollLeft / this.cellWidth
 
         this.element.style.boxSizing = 'border-box'
         this.element.parentElement.style.overflow = 'scroll'
@@ -51,90 +57,128 @@ class VirtualScroll {
 
         this.updateDebugBox = VirtualScroll.createDebugBox({
             'data.length': this.data.length,
-            'virtualCells.length': this.virtualCells.length,
+            'virtualRows.length': this.virtualRows.length,
             'cellHeight': this.cellHeight,
-            'currentIndex': this.currentIndex
+            'cellWidth': this.cellWidth,
+            'currentIndexY': this.currentIndexY,
+            'currentIndexX': this.currentIndexX
         })
 
-        this.adjustVirtualCells()
+        this.adjustVirtualRows()
         this.fitData()
 
         this.element.parentElement.addEventListener('scroll', event => {
-            this.currentIndex = Math.floor(this.element.parentElement.scrollTop / this.cellHeight)
-            this.updateVirtualCells()
+            this.currentIndexY = Math.floor(this.element.parentElement.scrollTop / this.cellHeight)
+            this.currentIndexX = Math.floor(this.element.parentElement.scrollLeft / this.cellWidth)
+            this.updateVirtualRows()
             this.updateDebugBox({
-                'currentIndex': this.currentIndex
+                'currentIndexX': this.currentIndexX,
+                'currentIndexY': this.currentIndexY
             })
         })
 
         window.addEventListener('resize', event => {
-            this.adjustVirtualCells()
-            this.updateVirtualCells()
+            this.adjustVirtualRows()
+            this.updateVirtualRows()
         })
 
     }
 
     fitData() {
-        if (this.data.length > this.maximumDisplayCount) {
+        if (this.data.length > this.maximumDisplayCountY) {
             console.warn(`Data is being truncated because the maximum number or rows is ${this.data.length} (data.length) / ${this.cellHeight}px (cellHeight) = ~${this.maximumDisplayCount}.`)
-            this.data.length = this.maximumDisplayCount
+            this.data.length = this.maximumDisplayCountY
         }
-        this.element.style.height = this.data.length * this.cellHeight
-        this.updateVirtualCells()
+        // @todo truncate x values too...
+        this.element.style.height = Math.max(this.data.length * this.cellHeight, this.element.parentElement.clientHeight)
+        this.element.style.width = Math.max(this.getColumnCount() * this.cellWidth, this.element.parentElement.clientWidth)
+        this.updateVirtualRows()
     }
 
-    adjustVirtualCells() {
-        let count = Math.ceil(this.element.parentElement.clientHeight / this.cellHeight) + 1
-        while (this.virtualCells.length < count) {
-            let cell = this.cell.cloneNode()
-            cell.addEventListener('blur', event => {
-                if (String(event.target.__rawValue) !== event.target.innerHTML) {
-                    switch (event.target.__type) {
-                        case 'string':
-                            this.data[event.target.__index] = event.target.innerHTML
-                            break
-                        case 'number':
-                            this.data[event.target.__index] = parseFloat(event.target.innerHTML)
-                            break
-                        case 'boolean':
-                            this.data[event.target.__index] = !!event.target.innerHTML
-                            break
+    adjustVirtualRows() {
+        let countY = Math.min(Math.ceil(this.element.parentElement.clientHeight / this.cellHeight) + 1, this.data.length)
+        let countX = Math.min(Math.ceil(this.element.parentElement.clientWidth / this.cellWidth) + 1, this.getColumnCount())
+        while (this.virtualRows.length < countY) {
+            let row = document.createElement('div')
+            row.setAttribute('class', 'row')
+            row.style.height = `${this.cellHeight}px`
+            this.virtualRows.push(row)
+        }
+        while (this.virtualRows.length > countY) {
+            let row = this.virtualRows[this.virtualRows.length - 1]
+            this.virtualRows.pop()
+        }
+        for (let i in this.virtualRows) {
+            let row = this.virtualRows[i]
+            while (row.children.length < countX) {
+                let cell = this.cell.cloneNode()
+                cell.addEventListener('blur', event => {
+                    if (String(event.target.__rawValue) !== event.target.innerHTML) {
+                        let newValue
+                        switch (event.target.__type) {
+                            case 'string':
+                                newValue = event.target.innerHTML
+                                break
+                            case 'number':
+                                newValue = parseFloat(event.target.innerHTML)
+                                break
+                            case 'boolean':
+                                newValue = !!event.target.innerHTML
+                                break
+                        }
+                        this.data[event.target.__indexY][event.target.__indexX] = newValue
                     }
-                }
-            })
-
-            this.virtualCells.push(cell)
-        }
-        while (this.virtualCells.length > count) {
-            let cell = this.virtualCells[this.virtualCells.length - 1]
-            this.virtualCells.pop()
-        }
-        if (this.debug) {
-            this.updateDebugBox({
-                'virtualCells.length': this.virtualCells.length
-            })
-        }
-    }
-
-    updateVirtualCells() {
-        let paddingTop = this.currentIndex * this.cellHeight
-        this.element.style.paddingTop = `${paddingTop}px`
-        for (let i in this.virtualCells) {
-            let cell = this.virtualCells[i]
-            let index = this.currentIndex + parseInt(i)
-            let value = this.data[index]
-            if (value !== cell.__rawValue) {
-                cell.__rawValue = value
-                cell.__index = index
-                cell.__type = typeof value
-                this.update(cell, value)
+                })
+                row.appendChild(cell)
             }
-            cell.blur()
+            while (row.children.length > countX) {
+                let cell = row.children[row.children.length - 1]
+                row.removeChild(cell)
+            }
+        }
+        // if (this.debug) {
+        //     this.updateDebugBox({
+        //         'countX': countX,
+        //         'countY': countY
+        //     })
+        // }
+    }
+
+    updateVirtualRows() {
+        let paddingTop = this.currentIndexY * this.cellHeight
+        let paddingLeft = this.currentIndexX * this.cellWidth
+        this.element.style.paddingTop = `${paddingTop}px`
+        this.element.style.paddingLeft = `${paddingLeft}px`
+        for (let i = 0; i < this.virtualRows.length; i++) {
+            let row = this.virtualRows[i]
+            let indexY = this.currentIndexY + parseInt(i)
+            let rowData = this.data[indexY]
+            for (let j = 0; j < row.children.length; j++) {
+                let cell = row.children[j]
+                let indexX = this.currentIndexX + parseInt(j)
+                let value = (rowData !== undefined) ? rowData[indexX] : null
+                if (value !== cell.__rawValue) {
+                    cell.__rawValue = value
+                    cell.__indexY = indexY
+                    cell.__indexX = indexX
+                    cell.__type = typeof value
+                    this.update(cell, value, indexY, indexX)
+                }
+                // cell.blur()
+            }
         }
     }
 
-    getMaximumDisplayCount() {
-        return Math.floor(maximumBodyHeight / this.cellHeight)
+    getColumnCount() {
+        return this.data[0].length
+    }
+
+    getMaximumDisplayCountY() {
+        return Math.floor(maximumPixelSize / this.cellHeight)
+    }
+
+    getMaximumDisplayCountX() {
+        return Math.floor(maximumPixelSize / this.cellWidth)
     }
 
     static createDebugBox(variables) {

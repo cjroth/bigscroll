@@ -4,24 +4,29 @@
         <style>
             body {
                 margin: 0;
+                font-family: sans-serif;
+                display: flex;
             }
             #container {
                 width: 80vw;
                 height: 100vh;
+                flex-grow: 1;
             }
-            #table > .cell {
+            #table > .row {
                 display: block;
-                width: 100%;
-                height: 50px;
-                line-height: 30px;
-                padding: 10px;
+                overflow: hidden;
+            }
+            #table > .row > .cell {
+                display: inline-block;
+                line-height: 100px;
                 box-sizing: border-box;
+                overflow: hidden;
+                text-align: center;
             }
             #debug {
-                position: fixed;
                 top: 0;
                 right: 0;
-                width: 20vw;
+                width: 200px;
                 height: 100vh;
                 background: #eee;
                 padding: 20px;
@@ -53,10 +58,15 @@
         cell.setAttribute('class', 'cell')
         cell.contentEditable = true
 
+        let ny = 100000, nx = 100
         let data = []
-        for (let i = 0; i < 335544; i++) {
-            let number = Math.random()
-            data.push(number)
+        for (let i = 0; i < ny; i++) {
+            let row = []
+            for (let j = 0; j < nx; j++) {
+                let number = Math.round(Math.random() * 100)
+                row.push(number)
+            }
+            data.push(row)
         }
 
         let dataProxy = new Proxy(data, {
@@ -76,12 +86,14 @@
         let table = new VirtualScroll({
             element: document.getElementById('table'),
             data: dataProxy,
-            cellHeight: 50,
+            cellHeight: 100,
+            cellWidth: 100,
             debug: true,
             cell,
-            update: (cell, value) => {
-                cell.innerHTML = String(value || '')
-                let g = Math.round(value * 255)
+            update: (cell, value, rowNumber, columnNumber) => {
+                // cell.innerHTML = String(value || '')
+                cell.innerHTML = `${rowNumber}:${columnNumber}`
+                let g = Math.round(value / 100 * 255)
                 cell.style.background = `rgba(255, ${g}, 255, 1)`
             }
         })
