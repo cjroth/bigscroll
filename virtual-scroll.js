@@ -146,16 +146,18 @@ class VirtualScroll {
     }
 
     updateVirtualRows() {
-        let paddingTop = this.currentIndexY * this.cellHeight
-        let paddingLeft = this.currentIndexX * this.cellWidth
-        this.element.style.paddingTop = `${paddingTop}px`
-        this.element.style.paddingLeft = `${paddingLeft}px`
+        let top = this.currentIndexY * this.cellHeight
+        let left = this.currentIndexX * this.cellWidth
+        // this.element.style.paddingTop = `${paddingTop}px`
+        // this.element.style.paddingLeft = `${paddingLeft}px`
         for (let i = 0; i < this.virtualRows.length; i++) {
             let row = this.virtualRows[i]
+            row.style.top = top + this.cellHeight * i
             let indexY = this.currentIndexY + parseInt(i)
             let rowData = this.data[indexY]
             for (let j = 0; j < row.children.length; j++) {
                 let cell = row.children[j]
+                cell.style.left = left + this.cellWidth * j
                 let indexX = this.currentIndexX + parseInt(j)
                 let value = (rowData !== undefined) ? rowData[indexX] : null
                 if (this.search && this.search[indexY] && this.search[indexY][indexX]) {

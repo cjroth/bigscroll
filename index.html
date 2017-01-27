@@ -12,19 +12,25 @@
                 height: 100vh;
                 flex-grow: 1;
                 scroll-behavior: smooth;
-                 -webkit-touch-overflow: scroll;
-                 -webkit-overflow-scrolling: touch;
+                -webkit-touch-overflow: scroll;
+                -webkit-overflow-scrolling: touch;
+            }
+            #table {
+                position: relative;
             }
             #table > .row {
                 display: block;
                 overflow: hidden;
+                position: absolute;
+                width: 100%;
             }
             #table > .row > .cell {
-                display: inline-block;
+                display: block;
                 line-height: 50px;
                 box-sizing: border-box;
                 overflow: hidden;
                 text-align: center;
+                position: absolute;
             }
             #table > .row > .cell.search-match {
                 background: yellow !important;
